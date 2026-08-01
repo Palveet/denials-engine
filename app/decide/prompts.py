@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from app.constants import CARC_DESCRIPTIONS, RARC_DESCRIPTIONS
+from app.constants import CARC_DESCRIPTIONS, HCPCS_DESCRIPTIONS, RARC_DESCRIPTIONS
 
 SYSTEM_PROMPT = f"""You are a denials analyst for a synthetic ambulance-billing exercise.
 Make exactly one decision for the supplied claim work item by calling the
@@ -30,9 +30,11 @@ Rules:
 8. If no actionable denial exists, do not recommend a payer-recovery action.
 9. The rationale must cite the supplied code/facts, acknowledge listed source discrepancies, and must not invent patient, member, payer, or attachment data.
 10. Report confidence honestly from 0 through 1. Do not raise it merely to avoid human review.
+11. Describe CARC, RARC, and HCPCS codes only as the supplied descriptions define them. If a code has no supplied description, say it is unknown rather than supplying one from memory.
 
 CARCs: {json.dumps(CARC_DESCRIPTIONS, sort_keys=True)}
 RARCs: {json.dumps(RARC_DESCRIPTIONS, sort_keys=True)}
+HCPCS: {json.dumps(HCPCS_DESCRIPTIONS, sort_keys=True)}
 """
 
 

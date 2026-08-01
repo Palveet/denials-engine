@@ -292,6 +292,11 @@ def generate_run_artifacts(run_id: str, *, output_dir: Path | None = None) -> No
                         dict.fromkeys(item["field"] for item in (claim.discrepancies or []))
                     ),
                     "artifacts": "; ".join(artifact_names),
+                    # The rationale is an internal audit record and is deliberately kept
+                    # out of the faxed letter, which the payer reads.
+                    "model_rationale": " | ".join(
+                        item.rationale for item in decisions if item.rationale
+                    ),
                 }
             )
         handoff_html, handoff_csv = generate_handoff(rows, target)

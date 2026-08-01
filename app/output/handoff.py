@@ -19,6 +19,7 @@ HEADERS = [
     "validator_flags",
     "source_discrepancies",
     "artifacts",
+    "model_rationale",
 ]
 
 

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from pypdf import PdfReader
 
-from app.output.documents import _letter_body, generate_fax_packet
+from app.output.documents import _letter_body, generate_fax_packet, packet_html
 from app.output.handoff import HEADERS, generate_handoff
 from app.schemas import (
     Actor,
@@ -91,6 +91,31 @@ def test_fax_packet_contains_required_fields_and_two_pages(tmp_path):
     assert "CO-50" in html_path.read_text()
 
 
+def test_packet_never_carries_the_model_rationale_to_the_payer():
+    """The rationale is an internal audit record; the payer must not read it."""
+    claim = _claim()
+    denial = DenialData(
+        group_code="CO", carc="50", denied_amount=Decimal("276"), source="era_835"
+    )
+    decision = ValidatedDecision(
+        outcome=Outcome.RECOVERABLE,
+        next_action=NextAction.SUBMIT_RECORDS,
+        actor=Actor.BILLER,
+        fax_required=True,
+        rationale=(
+            "appears_in_both_sources=false and group_is_explicit=true; confidence tempered "
+            "by the absence of RARC detail, so the biller should assemble the packet."
+        ),
+        confidence=0.68,
+        model_name="test",
+        prompt_version="test",
+    )
+    markup = packet_html(claim, denial, decision, packet_date=date(2026, 8, 1), page_count=2)
+    assert "Decision basis" not in markup
+    assert "appears_in_both_sources" not in markup
+    assert "confidence tempered" not in markup.lower()
+
+
 def test_records_letter_for_medical_necessity_does_not_demand_a_cmn():
     """A CO-50 denial never cited a missing CMN, so the letter must not ask for one."""
     denial = DenialData(
@@ -147,6 +172,7 @@ def test_handoff_separates_validator_flags_from_source_discrepancies(tmp_path):
             "validator_flags": "low_confidence",
             "source_discrepancies": "billed_amount; patient_name",
             "artifacts": "",
+            "model_rationale": "CO-197 with no supplied authorization window.",
         }
     ]
     html_path, csv_path = generate_handoff(rows, tmp_path)
@@ -154,4 +180,5 @@ def test_handoff_separates_validator_flags_from_source_discrepancies(tmp_path):
     assert list(written[0]) == HEADERS
     assert written[0]["validator_flags"] == "low_confidence"
     assert written[0]["source_discrepancies"] == "billed_amount; patient_name"
+    assert written[0]["model_rationale"] == "CO-197 with no supplied authorization window."
     assert "LIN CHEN" in html_path.read_text()

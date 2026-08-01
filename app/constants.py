@@ -29,6 +29,16 @@ RARC_DESCRIPTIONS = {
     "N115": "The decision followed a Local Coverage Determination.",
 }
 
+# Supplied so the model never has to guess what a billed code means. Sourced from
+# primer.md; a model-invented descriptor once reached a payer-facing letter.
+HCPCS_DESCRIPTIONS = {
+    "A0425": "Ground mileage.",
+    "A0426": "ALS non-emergency transport.",
+    "A0427": "ALS emergency transport.",
+    "A0429": "BLS emergency transport.",
+    "A0433": "ALS level 2 transport.",
+}
+
 ACTIONABLE_CARCS = {"1", "16", "18", "50", "197"}
 FAX_ACTIONS = {"submit_appeal", "submit_records", "request_retro_auth"}
 RECOVERY_ACTIONS = FAX_ACTIONS | {"resubmit_corrected_claim"}

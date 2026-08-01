@@ -145,8 +145,6 @@ def packet_html(
       Claim: {_e(claim.claim_id)} · DOS: {_e(claim.date_of_service)}</div>
     <p>To the Claims Review Team:</p>
     <p>{_letter_body(claim, denial, decision)}</p>
-    <h2>Decision basis</h2>
-    <p class="basis">{_e(decision.rationale)}</p>
     <p>Please send the written determination to the provider address above. For questions, contact the submitting biller.</p>
     <div class="signature"><p>Sincerely,</p><p><strong>Billing Department</strong><br>{_e(PROVIDER['name'])}</p></div>
   </section>

@@ -28,7 +28,7 @@ p { margin: 0 0 10px; }
 table { border-collapse: collapse; width: 100%; }
 th { text-align: left; background: #173f5f; color: white; padding: 7px; font-size: 8.5pt; }
 td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-size: 8.5pt; }
-</style><title>CLM-1008 fax packet</title></head>
+</style><title>CLM-1005 fax packet</title></head>
 <body>
   <section class="cover">
     <div class="brand"><div class="eyebrow">Fax cover sheet</div><h1>Records submission / claim reconsideration</h1>
@@ -36,10 +36,10 @@ td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-s
     <table class="cover-table"><tbody>
       <tr><td><span class="label">To</span><span class="value">Granite State Health Plan</span></td>
           <td><span class="label">Destination fax</span><span class="value">(603) 555-0188</span></td></tr>
-      <tr><td><span class="label">Patient</span><span class="value">OLIVER FINCH</span></td>
-          <td><span class="label">Member ID</span><span class="value">GSH001234508</span></td></tr>
-      <tr><td><span class="label">Claim ID</span><span class="value">CLM-1008</span></td>
-          <td><span class="label">Date of service</span><span class="value">2026-06-24</span></td></tr>
+      <tr><td><span class="label">Patient</span><span class="value">ELEANOR BRAND</span></td>
+          <td><span class="label">Member ID</span><span class="value">GSH001234505</span></td></tr>
+      <tr><td><span class="label">Claim ID</span><span class="value">CLM-1005</span></td>
+          <td><span class="label">Date of service</span><span class="value">2026-06-20</span></td></tr>
       <tr><td><span class="label">Provider</span><span class="value">Skyline Ambulance Service</span></td>
           <td><span class="label">Provider NPI</span><span class="value">1999999984</span></td></tr>
       <tr><td colspan="2"><span class="label">Request</span><span class="value">Records submission / claim reconsideration</span></td></tr>
@@ -55,12 +55,10 @@ td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-s
       <div class="meta">2026-08-01<br>Via fax: (603) 555-0188</div></div>
     <p>Granite State Health Plan<br>PO Box 91000, Concord, NH 03301</p>
     <div class="subject"><strong>Re: Records submission / claim reconsideration</strong><br>
-      Patient: OLIVER FINCH · Member ID: GSH001234508<br>
-      Claim: CLM-1008 · DOS: 2026-06-24</div>
+      Patient: ELEANOR BRAND · Member ID: GSH001234505<br>
+      Claim: CLM-1005 · DOS: 2026-06-20</div>
     <p>To the Claims Review Team:</p>
-    <p>Granite State Health Plan denied the referenced service under CO-50. We are submitting the clinical records supporting the medical necessity of this transport and ask that the claim be reconsidered on that record. This request is limited to service line A0425 (2026-06-24), denied amount $276.00.</p>
-    <h2>Decision basis</h2>
-    <p class="basis">ERA 835 shows claim CLM-1008 paid 1150.00 of 1426.00 with service line 2 (A0425, 12 units, billed 276.00) denied in full under explicit group CO with CARC 50 (service not deemed medically necessary). CO-group means the 276.00 is not patient responsibility (patient_responsibility is 0.00), so it is payer-recoverable. No CARC 18 duplicate and no prior-auth CARC 197 is present, so no duplicate check or auth-window question applies. No RARCs or payer reason text were supplied, and the item appears only in the ERA source (appears_in_both_sources=false, no clearinghouse ref/status); no discrepancies were listed. Medical-necessity denials on mileage are addressed with clinical documentation, and an external attachment is likely required, so the biller should assemble a records packet (trip report/PCS supporting medical necessity and loaded mileage) for submission; this application only prepares the packet. Confidence tempered by the absence of RARC/LCD detail explaining the necessity determination and the single-source record.</p>
+    <p>Granite State Health Plan denied the referenced service under CO-50. The payer cited remark code N115 (The decision followed a Local Coverage Determination). We are submitting the clinical records supporting the medical necessity of this transport and ask that the claim be reconsidered on that record. This request is limited to service line A0433 (2026-06-20), denied amount $1620.00.</p>
     <p>Please send the written determination to the provider address above. For questions, contact the submitting biller.</p>
     <div class="signature"><p>Sincerely,</p><p><strong>Billing Department</strong><br>Skyline Ambulance Service</p></div>
   </section>

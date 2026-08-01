@@ -2,8 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
-from app.constants import CARC_DESCRIPTIONS, RARC_DESCRIPTIONS
+from app.constants import CARC_DESCRIPTIONS, HCPCS_DESCRIPTIONS, RARC_DESCRIPTIONS
 from app.schemas import ClaimData, DenialData
+
+
+def _line_facts(line) -> dict:
+    return {
+        **line.model_dump(mode="json"),
+        "hcpcs_description": HCPCS_DESCRIPTIONS.get(line.hcpcs, "Unknown procedure code"),
+    }
 
 
 def build_fact_sheet(
@@ -35,7 +42,7 @@ def build_fact_sheet(
             "clearinghouse_ref": claim.clearinghouse_ref,
             "sources": [source.value for source in claim.sources],
         },
-        "service_line": selected_line.model_dump(mode="json") if selected_line else None,
+        "service_line": _line_facts(selected_line) if selected_line else None,
         "denial": (
             {
                 **denial.model_dump(mode="json"),

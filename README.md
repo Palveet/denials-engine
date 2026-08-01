@@ -84,13 +84,16 @@ overlapping claims and two recorded CLM-1006 discrepancies.
 
 ## Committed results
 
-`artifacts/runs/7252eced-6881-410c-b355-7882b3302a3c/` holds a complete run against the provided
-files so you do not have to regenerate anything:
+`artifacts/runs/` holds one complete run against the provided files, so you do not have to
+regenerate anything. Exactly one run directory is committed:
 
-- `handoff-summary.html` / `.csv` — one row per normalized claim
-- `clm-1004-submit-records.pdf`, `clm-1005-submit-appeal.pdf`, `clm-1008-submit-records.pdf` —
-  fax packets, each a cover sheet followed by the letter
+- `handoff-summary.html` / `.csv` — one row per normalized claim, including the model's rationale
+- one `clm-<id>-<action>.pdf` per claim where a fax is the right move, each a cover sheet followed
+  by the letter
 - matching `.html` sources and `all-artifacts.zip`
+
+The letters carry only what the payer needs. The model's reasoning lives in the handoff and in the
+results UI, not in the outgoing fax.
 
 Those decisions came from live calls to **`claude-opus-5`**, recorded on every decision row along
 with the prompt version, the fact sheet the model saw, and its raw response. To reproduce the run

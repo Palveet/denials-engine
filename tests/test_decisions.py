@@ -16,6 +16,7 @@ from app.schemas import (
     DenialData,
     NextAction,
     Outcome,
+    ServiceLineData,
     Source,
 )
 
@@ -31,6 +32,65 @@ def claim_with(denial: DenialData | None) -> tuple[ClaimData, DenialData | None]
         denials=[denial] if denial else [],
     )
     return claim, denial
+
+
+def test_fact_sheet_supplies_the_hcpcs_description_so_the_model_cannot_invent_one():
+    """A0433 was once described to a payer as "ALS1 emergency"; the primer says ALS level 2."""
+    claim = ClaimData(
+        claim_id="CLM-1005",
+        patient_name="ELEANOR BRAND",
+        payer_name="GRANITE STATE HEALTH PLAN",
+        date_of_service=date(2026, 6, 20),
+        billed_amount=Decimal("1620"),
+        sources=[Source.ERA_835],
+        service_lines=[
+            ServiceLineData(
+                sequence=1,
+                hcpcs="A0433",
+                billed_amount=Decimal("1620"),
+                paid_amount=Decimal("0"),
+            )
+        ],
+    )
+    denial = DenialData(
+        group_code="CO",
+        carc="50",
+        denied_amount=Decimal("1620"),
+        source="era_835",
+        service_line_sequence=1,
+    )
+    facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
+    assert facts["service_line"]["hcpcs_description"] == "ALS level 2 transport."
+    assert "ALS level 2" in SYSTEM_PROMPT
+    assert "only as the supplied descriptions define them" in SYSTEM_PROMPT
+
+
+def test_unknown_hcpcs_is_labelled_unknown_rather_than_guessed():
+    claim = ClaimData(
+        claim_id="CLM-9999",
+        patient_name="TEST PATIENT",
+        payer_name="TEST PAYER",
+        date_of_service=date(2026, 6, 20),
+        billed_amount=Decimal("100"),
+        sources=[Source.ERA_835],
+        service_lines=[
+            ServiceLineData(
+                sequence=1,
+                hcpcs="A9999",
+                billed_amount=Decimal("100"),
+                paid_amount=Decimal("0"),
+            )
+        ],
+    )
+    denial = DenialData(
+        group_code="CO",
+        carc="50",
+        denied_amount=Decimal("100"),
+        source="era_835",
+        service_line_sequence=1,
+    )
+    facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
+    assert facts["service_line"]["hcpcs_description"] == "Unknown procedure code"
 
 
 def test_prompt_uses_the_tool_schema_without_an_inline_answer_key():
