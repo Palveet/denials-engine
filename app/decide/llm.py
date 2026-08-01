@@ -1,0 +1,119 @@
+from __future__ import annotations
+
+import json
+import os
+from typing import Protocol
+
+import httpx
+from pydantic import ValidationError
+
+from app.decide.prompts import SYSTEM_PROMPT, user_prompt
+from app.decide.validate import fallback_decision, validate_candidate
+from app.schemas import DecisionCandidate, ValidatedDecision
+
+
+class DecisionClient(Protocol):
+    model_name: str
+
+    async def complete(self, fact_sheet: dict, validation_error: str | None = None) -> tuple[str, dict]: ...
+
+
+DECISION_TOOL = {
+    "name": "record_denial_decision",
+    "description": "Record exactly one validated operational decision for the supplied claim work item.",
+    "strict": True,
+    "input_schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "outcome": {
+                "type": "string",
+                "enum": ["recoverable", "not_recoverable", "needs_info", "unsure"],
+            },
+            "next_action": {
+                "type": "string",
+                "enum": [
+                    "submit_appeal",
+                    "submit_records",
+                    "request_retro_auth",
+                    "resubmit_corrected_claim",
+                    "bill_patient",
+                    "verify_duplicate",
+                    "call_payer",
+                    "none",
+                ],
+            },
+            "actor": {"type": "string", "enum": ["system", "biller", "payer"]},
+            "fax_required": {"type": "boolean"},
+            "rationale": {"type": "string"},
+            "confidence": {"type": "number", "description": "A number from 0 through 1."},
+        },
+        "required": ["outcome", "next_action", "actor", "fax_required", "rationale", "confidence"],
+    },
+}
+
+
+class AnthropicClient:
+    def __init__(self) -> None:
+        self.api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        self.base_url = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").rstrip("/")
+        self.model_name = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5")
+
+    async def complete(self, fact_sheet: dict, validation_error: str | None = None) -> tuple[str, dict]:
+        if not self.api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY is not configured")
+        payload = {
+            "model": self.model_name,
+            "max_tokens": 1024,
+            "system": SYSTEM_PROMPT,
+            "messages": [{"role": "user", "content": user_prompt(fact_sheet, validation_error)}],
+            "tools": [DECISION_TOOL],
+            "tool_choice": {"type": "tool", "name": DECISION_TOOL["name"]},
+        }
+        async with httpx.AsyncClient(timeout=90) as client:
+            response = await client.post(
+                f"{self.base_url}/v1/messages",
+                headers={
+                    "content-type": "application/json",
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            body = response.json()
+        tool_calls = [
+            block
+            for block in body.get("content", [])
+            if block.get("type") == "tool_use" and block.get("name") == DECISION_TOOL["name"]
+        ]
+        if len(tool_calls) != 1 or not isinstance(tool_calls[0].get("input"), dict):
+            raise ValueError("Anthropic did not return exactly one structured decision tool call")
+        return json.dumps(tool_calls[0]["input"]), body
+
+
+def get_client() -> DecisionClient:
+    return AnthropicClient()
+
+
+async def decide_fact_sheet(client: DecisionClient, fact_sheet: dict) -> ValidatedDecision:
+    last_raw: dict = {}
+    error_text: str | None = None
+    for _attempt in range(2):
+        try:
+            content, last_raw = await client.complete(fact_sheet, error_text)
+            candidate = DecisionCandidate.model_validate_json(content)
+            return validate_candidate(candidate, fact_sheet, raw=last_raw, model_name=client.model_name)
+        except (ValidationError, json.JSONDecodeError, ValueError, KeyError) as exc:
+            error_text = str(exc)
+        except Exception as exc:
+            return fallback_decision(
+                "llm_request_failure",
+                raw={"error": str(exc)},
+                model_name=client.model_name,
+            )
+    return fallback_decision(
+        "llm_parse_failure",
+        raw=last_raw or {"error": error_text or "unknown parse failure"},
+        model_name=client.model_name,
+    )
