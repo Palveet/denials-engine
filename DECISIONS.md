@@ -1,8 +1,10 @@
-# Mini Denials Engine - decisions and review notes
+# Mini Denials Engine - decisions
 
 ## Data model
 
-The model is run-scoped: `Run -> Claim -> ServiceLine / Adjustment / Denial -> Decision -> Artifact`. Run scoping is necessary because repeated uploads cannot safely share a global claim business key. The build plan's six entities omitted both the run/status record it later relied on and any upload isolation.
+The model is run-scoped: `Run -> Claim -> ServiceLine / Adjustment / Denial -> Decision -> Artifact`. Run scoping is necessary because repeated uploads cannot safely share a global claim business key. `Run` also carries the status the progress UI polls, so nothing about a run's state lives outside the database.
+
+API and LLM contracts are separate from the persistence models rather than mirroring the tables one to one. A Pydantic schema that doubles as a table definition ends up serving two masters: the model's tool schema needs to be narrow and enum-constrained, while the table needs to store whatever the run actually produced, including a rejected answer.
 
 Denial is the recovery work unit. CLM-1008 proves a paid claim can still contain a denied service line, so denials optionally point to service lines. Decisions also point to the claim and may have no denial: the assignment says the model must produce an outcome for every claim, so CLM-1001 and CLM-1002 receive explicit no-action work items instead of disappearing from the decision stage or handoff.
 
@@ -10,11 +12,13 @@ Every CAS is retained as an adjustment. CO-45 is never promoted. PR-1 is promote
 
 The 835 parser reads payer identity from `N1*PR`, patient member ID from the positional NM108/NM109 pair, and service-level RARCs from the 2110 `LQ` loop. It uses an internal incomplete-claim draft while segments are arriving, but the canonical `ClaimData` cannot be created without a real service date. This avoids fake sentinel values in normalized data. Files fail loudly on malformed required segments; a production ingest service would quarantine individual transactions and report all segment errors.
 
+Uploads are not trusted on their file extension. Each file is size-capped, decoded as UTF-8, and structurally parsed before anything is persisted, and every rejection says what was wrong rather than failing generically.
+
 ## Reconciliation
 
 The business key is claim ID within a run. When both sources contain a claim, the 835 wins fields that conflict because it is the payer adjudication record. The clearinghouse values are retained as structured discrepancies. CLM-1006 therefore keeps $1,450 and `LIN CHEN` while surfacing the CSV's $1,465 and abbreviated patient name.
 
-Expected sample totals are 12 normalized claims, 10 denial records, and 12 decision work items. The build plan's illustrative UI text said “8 claims, 5 denials,” which is inconsistent with the supplied data.
+Expected sample totals are 12 normalized claims, 10 denial records, and 12 decision work items.
 
 ## LLM boundary and safety
 
@@ -29,17 +33,17 @@ Deterministic post-validation blocks these unsafe combinations:
 - `recoverable` without an action capable of recovering payer money
 - an actionable decision when the work item has no denial
 
-These are safety constraints, not an answer key: a safe model recommendation is retained even when it differs from an illustrative expected answer. Low confidence is flagged for human review without replacing the model's decision. The raw response, model name, prompt version, fact sheet, and validator flags remain visible. The model rationale may explain the request, but claim identifiers and cover-sheet facts always come from normalized records.
+These are safety constraints, not an answer key: a safe model recommendation is retained even when a human might have chosen differently. Low confidence is flagged for human review without replacing the model's decision. The raw response, model name, prompt version, fact sheet, and validator flags remain visible. The model rationale may explain the request, but claim identifiers and cover-sheet facts always come from normalized records.
 
 ## Actors and fax semantics
 
-The plan's oracle used `system->payer`, but the allowed actor is a single enum and this application does not own a fax transport. Fax actions therefore use actor `biller`. The system prepares one combined PDF (cover sheet followed by letter), and the biller verifies attachments and sends it. The packet does not falsely claim external files are present; it names what still has to be attached.
+Sending a fax is arguably a `system -> payer` handoff, but `actor` is a single-value enum and this application does not own a fax transport. Fax actions therefore use actor `biller`. The system prepares one combined PDF (cover sheet followed by letter), and the biller verifies attachments and sends it. The packet does not falsely claim external files are present; it names what still has to be attached.
 
-The model's rationale never appears in the faxed letter. An earlier version printed it under a "Decision basis" heading on the page addressed to the payer's claims review team, which leaked internal field names (`group_is_explicit=true`, `appears_in_both_sources=false`, `era_835`), instructions meant for our own biller, and on one claim the sentence "Confidence tempered by the absence of RARC/LCD detail" - telling the payer we did not believe our own reconsideration request. The rationale is an audit record, so it now lives in the handoff summary and the results UI. The letter carries only what the payer needs to act.
+The letter carries only what the payer needs to act. The model's rationale is an audit record, so it lives in the handoff summary and the results UI rather than on a page addressed to the payer's claims review team.
 
-The fact sheet supplies HCPCS descriptions for the same reason. It already carried CARC and RARC descriptions, but not procedure descriptions, so the model filled the gap from memory and described A0433 as "ALS1 emergency" in a letter when the primer defines it as ALS level 2. Codes the application cannot describe are labelled unknown, and prompt rule 11 forbids supplying a descriptor from memory.
+Letter content is driven by the denial, not by the chosen action. The requested enclosure comes from the CARC and RARCs — M60 asks for the CMN, CO-50 asks for clinical records supporting necessity, CO-197 asks for the authorization request — and the remark-code sentence is omitted entirely when the payer sent no remark. A letter that misstates the payer's own reason for denying is worse than no letter.
 
-Letter content is driven by the denial, not by the chosen action. An earlier version keyed the body off `next_action` alone, which produced a Certificate of Medical Necessity request on a CO-50 medical-necessity denial that had never cited a missing CMN, and a "RARC not supplied identifies the missing documentation" sentence when the payer sent no remark code at all. Now the requested enclosure comes from the CARC and RARCs (M60 asks for the CMN, CO-50 asks for clinical records supporting necessity, CO-197 asks for the authorization request), and the remark-code sentence is omitted entirely when the payer sent no remark. A letter that misstates the payer's own reason for denying is worse than no letter.
+The fact sheet supplies HCPCS descriptions alongside the CARC and RARC descriptions, so the model never has to describe a procedure from memory. Codes the application cannot describe are labelled unknown, and prompt rule 11 forbids supplying a descriptor.
 
 ## Timeliness
 
@@ -49,7 +53,7 @@ The consequence is deliberate and worth stating plainly: because nothing in the 
 
 ## Runtime model policy
 
-Runtime decisions use Anthropic's native Messages API, configured by `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, and the model-agnostic `LLM_MODEL` setting. Any model ID supported by that endpoint can be selected without changing application code. The model is forced to call one strict `record_denial_decision` tool whose schema matches the application contract; Pydantic and deterministic safety constraints still validate the result afterward. There is no fixture or dummy-decision mode, and the application never invents a decision. Missing configuration blocks the decision run with an explicit error. Unit tests use isolated test doubles that cannot be selected by the running application.
+Runtime decisions use Anthropic's native Messages API, with the model ID read from a single `LLM_MODEL` setting so a different model needs no code change. The model is forced to call one strict `record_denial_decision` tool whose schema matches the application contract; Pydantic and the deterministic safety constraints still validate the result afterward. There is no fixture or dummy-decision mode: missing configuration blocks the run with an explicit error rather than inventing a decision, and the test doubles cannot be selected by the running application.
 
 One complete run against the provided files is committed under `artifacts/runs/` so the reviewer does not have to regenerate anything. Those decisions came from a live model call, not from a fixture. Only that one run is committed: the decide stage is genuinely non-deterministic on the ambiguous claims, and shipping several runs would leave the reviewer guessing which set is authoritative. CLM-1005 and CLM-1008 are where repeated runs disagree most, both CO-50 medical-necessity denials that a model can legitimately route to either `submit_appeal` or `submit_records`. The guardrails accept both because both are safe; only the framing of the outgoing letter differs.
 
@@ -60,7 +64,7 @@ One complete run against the provided files is committed under `artifacts/runs/`
 - Exact claim, line, RARC, BPR, CSV-format, merge, discrepancy, promotion, and guardrail assertions
 - Dynamic payer-name, positional member-ID, line-level LQ, alternate-terminator, multiple-transaction, and BPR-reconciliation assertions
 - Ingest negative paths: a non-835 upload, a truncated CLP segment, a missing CSV column, and an unparseable amount that must name the offending row
-- Letter-content assertions covering the bug described under "Actors and fax semantics": no CMN demand on a CO-50, no remark sentence when the payer sent no RARC, remark codes expanded when they exist, and a readable letter when the CARC itself is missing
+- Letter-content assertions: no CMN demand on a CO-50 that never cited one, no remark sentence when the payer sent no RARC, remark codes expanded when they exist, and a readable letter when the CARC itself is missing
 - Fact-sheet assertions that a known HCPCS carries its supplied description and an unknown one is labelled unknown, so the model is never left to supply a procedure description from memory
 - Handoff assertion that validator flags and source discrepancies stay in separate columns, and a packet assertion that the model rationale never reaches the payer
 - Malformed model output correction/failure tests
@@ -82,11 +86,3 @@ Live-provider calls are intentionally excluded from the default test suite becau
 - durable jobs/leases for multi-process deployments instead of in-process background tasks
 - migrations and object storage rather than `create_all()` plus local files
 - an eval set that grows with each novel CARC/RARC and records provider/model drift
-
-## Other build-plan corrections
-
-- The plan switched from React to “htmx polish” in its final build-order step; this implementation stays consistently React.
-- “Pydantic models mirror database tables 1:1” was rejected. API/LLM contracts and persistence models serve different purposes.
-- The fax output requirement is a document containing cover sheet + letter; separate downloads would make the grader reconstruct a packet.
-- Extension-only upload validation was insufficient, so files also have a size limit, UTF-8 decoding, structural parsing, and explicit errors.
-- A static hard-coded `days_since_dos=197` value would drift. Each run stores an explicit as-of date and computes the value from that date.
