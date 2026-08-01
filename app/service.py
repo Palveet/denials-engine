@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.database import SessionLocal
 from app.decide.facts import build_fact_sheet
-from app.decide.llm import decide_fact_sheet, get_client
+from app.decide.llm import ModelDecisionError, decide_fact_sheet, get_client
+from app.constants import PROMPT_VERSION
 from app.ingest.clearinghouse import parse_clearinghouse_csv
 from app.ingest.merge import merge_claims
 from app.ingest.x12_835 import parse_835
@@ -183,7 +184,21 @@ async def _process_decision(decision_id: int, client, semaphore: asyncio.Semapho
             decision.status = "deciding"
             decision.fact_sheet = facts
             session.commit()
-        result = await decide_fact_sheet(client, facts)
+        try:
+            result = await decide_fact_sheet(client, facts)
+        except ModelDecisionError as exc:
+            with SessionLocal() as session:
+                decision = session.get(DecisionRecord, decision_id)
+                if decision:
+                    decision.status = "failed"
+                    decision.rationale = str(exc)
+                    decision.confidence = Decimal("0")
+                    decision.llm_raw = exc.raw
+                    decision.validator_flags = [exc.flag]
+                    decision.model_name = exc.model_name
+                    decision.prompt_version = PROMPT_VERSION
+                    session.commit()
+            raise
         with SessionLocal() as session:
             decision = session.get(DecisionRecord, decision_id)
             if not decision:
@@ -308,7 +323,24 @@ async def process_run(run_id: str, *, output_dir: Path | None = None) -> None:
     try:
         client = get_client()
         semaphore = asyncio.Semaphore(4)
-        await asyncio.gather(*(_process_decision(item_id, client, semaphore) for item_id in decision_ids))
+        tasks = [
+            asyncio.create_task(_process_decision(item_id, client, semaphore))
+            for item_id in decision_ids
+        ]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+        errors: list[BaseException] = []
+        for task in done:
+            try:
+                task.result()
+            except BaseException as exc:
+                errors.append(exc)
+        if errors:
+            for task in pending:
+                task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+            raise errors[0]
+        if pending:
+            await asyncio.gather(*pending)
         generate_run_artifacts(run_id, output_dir=output_dir)
         with SessionLocal() as session:
             run = session.get(RunRecord, run_id)
@@ -355,4 +387,3 @@ def run_status(session: Session, run_id: str) -> dict | None:
             for item in decisions
         ],
     }
-

@@ -104,8 +104,6 @@ def packet_html(
           <td><span class="label">Date</span><span class="value">{_e(packet_date)}</span></td></tr>
     </tbody></table>
     <div class="checklist"><strong>Before sending:</strong> {_e(attachments)} The generated page count excludes external attachments.</div>
-    <div class="notice"><strong>Synthetic exercise data.</strong> This packet contains no real PHI. Verify destination and attachments before any real-world use.</div>
-    <div class="footer">Prepared by the Mini Denials Engine for biller review. The application does not transmit faxes.</div>
   </section>
   <section class="letter">
     <div class="letterhead"><div><strong>{_e(PROVIDER['name'])}</strong><br>{_e(PROVIDER['address'])}<br>NPI {_e(PROVIDER['npi'])}</div>

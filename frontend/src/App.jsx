@@ -90,7 +90,7 @@ export default function App() {
         </section>
 
         {health?.status === "ok" && health?.llm_configured === false && (
-          <div className="mode-warning"><strong>Anthropic key is missing.</strong> Add <code>ANTHROPIC_API_KEY</code> to <code>.env</code> and restart before running decisions.</div>
+          <div className="mode-warning"><strong>Model configuration is incomplete.</strong> Add <code>ANTHROPIC_API_KEY</code> and the exact <code>LLM_MODEL</code> ID to <code>.env</code>, then restart.</div>
         )}
         {error && <div className="error-banner"><strong>Needs attention</strong><span>{error}</span></div>}
         <UploadForm onSubmit={upload} busy={phase === "uploading"} currentDate={health?.current_date} />

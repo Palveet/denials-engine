@@ -5,8 +5,9 @@ from decimal import Decimal
 import pytest
 
 from app.decide.facts import build_fact_sheet
-from app.decide.llm import AnthropicClient, decide_fact_sheet, get_client
-from app.decide.validate import validate_candidate
+from app.decide.llm import AnthropicClient, ModelDecisionError, decide_fact_sheet, get_client
+from app.decide.prompts import SYSTEM_PROMPT
+from app.decide.validate import GuardrailViolation, validate_candidate
 from app.schemas import (
     Actor,
     ClaimData,
@@ -31,7 +32,13 @@ def claim_with(denial: DenialData | None) -> tuple[ClaimData, DenialData | None]
     return claim, denial
 
 
-def test_pr_appeal_is_demoted_and_never_faxed():
+def test_prompt_uses_the_tool_schema_without_an_inline_answer_key():
+    assert "Required schema:" not in SYSTEM_PROMPT
+    assert "Choose needs_info, call_payer" not in SYSTEM_PROMPT
+    assert "Make the operational decision yourself" in SYSTEM_PROMPT
+
+
+def test_pr_appeal_is_rejected_and_never_faxed():
     claim, denial = claim_with(
         DenialData(group_code="PR", carc="1", denied_amount=Decimal("100"), source="era_835")
     )
@@ -44,14 +51,12 @@ def test_pr_appeal_is_demoted_and_never_faxed():
         rationale="PR-1 should be appealed even though it is patient responsibility.",
         confidence=0.9,
     )
-    result = validate_candidate(candidate, facts, raw={}, model_name="test")
-    assert result.outcome == Outcome.NOT_RECOVERABLE
-    assert result.next_action == NextAction.BILL_PATIENT
-    assert result.fax_required is False
-    assert "patient_responsibility_conflict" in result.validator_flags
+    with pytest.raises(GuardrailViolation) as exc_info:
+        validate_candidate(candidate, facts, raw={}, model_name="test")
+    assert "patient_responsibility_conflict" in exc_info.value.flags
 
 
-def test_low_confidence_is_demoted():
+def test_low_confidence_is_flagged_without_replacing_model_decision():
     claim, denial = claim_with(
         DenialData(group_code="CO", carc="50", denied_amount=Decimal("100"), source="era_835")
     )
@@ -84,11 +89,9 @@ def test_prior_auth_without_payer_window_requires_call():
         rationale="A retro-authorization request may recover the denied amount.",
         confidence=0.9,
     )
-    result = validate_candidate(candidate, facts, raw={}, model_name="test")
-    assert result.outcome == Outcome.NEEDS_INFO
-    assert result.next_action == NextAction.CALL_PAYER
-    assert result.fax_required is False
-    assert "prior_auth_window_unknown" in result.validator_flags
+    with pytest.raises(GuardrailViolation) as exc_info:
+        validate_candidate(candidate, facts, raw={}, model_name="test")
+    assert "prior_auth_window_unknown" in exc_info.value.flags
 
 
 def test_bare_medical_necessity_code_requires_group_verification():
@@ -110,11 +113,28 @@ def test_bare_medical_necessity_code_requires_group_verification():
         rationale="The denial may need records, but the group code is unavailable.",
         confidence=0.8,
     )
+    with pytest.raises(GuardrailViolation) as exc_info:
+        validate_candidate(candidate, facts, raw={}, model_name="test")
+    assert "denial_group_unverified" in exc_info.value.flags
+
+
+def test_safe_model_judgment_is_accepted_without_answer_key_matching():
+    claim, denial = claim_with(
+        DenialData(group_code="CO", carc="50", denied_amount=Decimal("100"), source="era_835")
+    )
+    facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
+    candidate = DecisionCandidate(
+        outcome=Outcome.NEEDS_INFO,
+        next_action=NextAction.CALL_PAYER,
+        actor=Actor.BILLER,
+        fax_required=False,
+        rationale="The model wants coverage details before deciding whether an appeal is supportable.",
+        confidence=0.8,
+    )
     result = validate_candidate(candidate, facts, raw={}, model_name="test")
     assert result.outcome == Outcome.NEEDS_INFO
     assert result.next_action == NextAction.CALL_PAYER
-    assert result.fax_required is False
-    assert "denial_group_unverified" in result.validator_flags
+    assert result.validator_flags == []
 
 
 class ValidResponseClient:
@@ -185,7 +205,7 @@ class MockAnthropicHttpClient:
 async def test_anthropic_client_uses_native_messages_and_strict_tool(monkeypatch):
     MockAnthropicHttpClient.calls.clear()
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-5")
+    monkeypatch.setenv("LLM_MODEL", "claude-fable-5")
     monkeypatch.setattr("app.decide.llm.httpx.AsyncClient", MockAnthropicHttpClient)
 
     client = get_client()
@@ -196,6 +216,7 @@ async def test_anthropic_client_uses_native_messages_and_strict_tool(monkeypatch
     assert raw["id"] == "msg_test"
     call = MockAnthropicHttpClient.calls[0]
     assert call["url"] == "https://api.anthropic.com/v1/messages"
+    assert call["payload"]["model"] == "claude-fable-5"
     assert call["headers"]["x-api-key"] == "test-key"
     assert call["headers"]["anthropic-version"] == "2023-06-01"
     assert call["payload"]["tool_choice"] == {
@@ -222,8 +243,63 @@ async def test_malformed_json_retries_once_then_degrades():
     claim, denial = claim_with(None)
     facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
     client = AlwaysMalformed()
+    with pytest.raises(ModelDecisionError) as exc_info:
+        await decide_fact_sheet(client, facts)
+    assert client.calls == 2
+    assert exc_info.value.flag == "model_response_failure"
+
+
+class UnsafeThenSafe:
+    model_name = "retry-test"
+
+    def __init__(self):
+        self.calls = 0
+        self.validation_errors = []
+
+    async def complete(self, fact_sheet, validation_error=None):
+        self.calls += 1
+        self.validation_errors.append(validation_error)
+        if self.calls == 1:
+            return (
+                '{"outcome":"recoverable","next_action":"submit_appeal","actor":"biller",'
+                '"fax_required":true,"rationale":"Appeal the patient responsibility amount.",'
+                '"confidence":0.9}',
+                {"attempt": 1},
+            )
+        return (
+            '{"outcome":"not_recoverable","next_action":"bill_patient","actor":"biller",'
+            '"fax_required":false,"rationale":"PR-1 is patient responsibility and is not appealed.",'
+            '"confidence":0.95}',
+            {"attempt": 2},
+        )
+
+
+@pytest.mark.asyncio
+async def test_unsafe_answer_is_returned_to_model_for_one_correction():
+    claim, denial = claim_with(
+        DenialData(group_code="PR", carc="1", denied_amount=Decimal("100"), source="era_835")
+    )
+    facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
+    client = UnsafeThenSafe()
     result = await decide_fact_sheet(client, facts)
     assert client.calls == 2
-    assert result.outcome == Outcome.UNSURE
-    assert result.fax_required is False
-    assert result.validator_flags == ["llm_parse_failure"]
+    assert "patient_responsibility_conflict" in client.validation_errors[1]
+    assert result.outcome == Outcome.NOT_RECOVERABLE
+    assert result.next_action == NextAction.BILL_PATIENT
+    assert "model_revised_after_guardrail" in result.validator_flags
+
+
+class RequestFailure:
+    model_name = "request-failure-test"
+
+    async def complete(self, fact_sheet, validation_error=None):
+        raise RuntimeError("provider unavailable")
+
+
+@pytest.mark.asyncio
+async def test_request_failure_is_not_converted_into_a_fake_decision():
+    claim, denial = claim_with(None)
+    facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
+    with pytest.raises(ModelDecisionError) as exc_info:
+        await decide_fact_sheet(RequestFailure(), facts)
+    assert exc_info.value.flag == "model_request_failure"

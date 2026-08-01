@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@page { size: Letter; margin: 0.58in; }
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 10.5pt; line-height: 1.42; margin: 0; }
+h1 { font-size: 21pt; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 13pt; margin: 18px 0 7px; color: #173f5f; }
+p { margin: 0 0 10px; }
+.cover { min-height: 9.3in; display: flex; flex-direction: column; }
+.letter { break-before: page; }
+.brand { border-top: 7px solid #0d9488; padding-top: 16px; margin-bottom: 20px; }
+.eyebrow { color: #0f766e; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: 8.5pt; }
+.cover-table { border: 1px solid #cbd5e1; border-radius: 8px; border-collapse: separate; border-spacing: 0; table-layout: fixed; overflow: hidden; }
+.cover-table td { width: 50%; border: 0; border-bottom: 1px solid #e2e8f0; padding: 10px 14px; vertical-align: top; font-size: 10.5pt; }
+.cover-table td + td { border-left: 1px solid #e2e8f0; }
+.cover-table tr:last-child td { border-bottom: 0; }
+.label { display: block; color: #64748b; font-size: 8pt; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+.value { display: block; font-weight: 700; overflow-wrap: anywhere; }
+.notice { margin-top: 18px; background: #f1f5f9; border-left: 4px solid #0d9488; padding: 11px 13px; }
+.checklist { margin-top: 14px; border: 1px solid #f59e0b; background: #fffbeb; padding: 10px 13px; }
+.footer { margin-top: auto; color: #64748b; font-size: 8.5pt; border-top: 1px solid #cbd5e1; padding-top: 8px; }
+.letterhead { display: flex; justify-content: space-between; gap: 30px; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 20px; }
+.letterhead strong { color: #173f5f; font-size: 14pt; }
+.meta { text-align: right; color: #475569; font-size: 9pt; }
+.subject { background: #f1f5f9; padding: 10px 12px; margin: 14px 0; }
+.signature { margin-top: 25px; }
+.basis { border-left: 3px solid #94a3b8; padding-left: 12px; color: #334155; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; background: #173f5f; color: white; padding: 7px; font-size: 8.5pt; }
+td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-size: 8.5pt; }
+
+        @page { size: Letter landscape; margin: .45in; } body { font-size: 9pt; }
+        h1 { color: #173f5f; } .sub { color: #475569; margin-bottom: 16px; }</style></head>
+        <body><h1>Denials handoff summary</h1>
+        <p class="sub">One row per normalized claim. Paid/no-action claims remain visible so reconciliation is complete.</p>
+        <table><thead><tr><th>Claim Id</th><th>Patient</th><th>Date Of Service</th><th>Denied Amount</th><th>Outcome</th><th>Next Step</th><th>Actor</th><th>Confidence</th><th>Flags</th><th>Artifacts</th></tr></thead>
+        <tbody><tr><td>CLM-1001</td><td>JANE DOE</td><td>2026-06-08</td><td>0.00</td><td>not_recoverable</td><td>none</td><td>system</td><td>0.900</td><td></td><td></td></tr><tr><td>CLM-1002</td><td>RICHARD ROE</td><td>2026-06-11</td><td>0.00</td><td>not_recoverable</td><td>none</td><td>system</td><td>0.820</td><td></td><td></td></tr><tr><td>CLM-1003</td><td>MARGARET STONE</td><td>2026-06-15</td><td>700.00</td><td>not_recoverable</td><td>bill_patient</td><td>biller</td><td>0.930</td><td></td><td></td></tr><tr><td>CLM-1004</td><td>HECTOR VALE</td><td>2026-06-18</td><td>1275.00</td><td>recoverable</td><td>submit_records</td><td>biller</td><td>0.820</td><td></td><td>clm-1004-submit-records.pdf</td></tr><tr><td>CLM-1005</td><td>ELEANOR BRAND</td><td>2026-06-20</td><td>1620.00</td><td>recoverable</td><td>submit_appeal</td><td>biller</td><td>0.720</td><td></td><td>clm-1005-submit-appeal.pdf</td></tr><tr><td>CLM-1006</td><td>LIN CHEN</td><td>2026-01-12</td><td>1450.00</td><td>unsure</td><td>call_payer</td><td>biller</td><td>0.550</td><td>low_confidence; billed_amount; patient_name</td><td></td></tr><tr><td>CLM-1007</td><td>GORDON WHITFIELD</td><td>2026-06-22</td><td>980.00</td><td>needs_info</td><td>verify_duplicate</td><td>biller</td><td>0.830</td><td></td><td></td></tr><tr><td>CLM-1008</td><td>OLIVER FINCH</td><td>2026-06-24</td><td>276.00</td><td>recoverable</td><td>submit_records</td><td>biller</td><td>0.680</td><td></td><td>clm-1008-submit-records.pdf</td></tr><tr><td>CLM-2001</td><td>SAMUEL ORTIZ</td><td>2026-06-09</td><td>1580.00</td><td>needs_info</td><td>call_payer</td><td>biller</td><td>0.620</td><td></td><td></td></tr><tr><td>CLM-2002</td><td>AMARA OKAFOR</td><td>2026-06-14</td><td>1120.00</td><td>needs_info</td><td>call_payer</td><td>biller</td><td>0.720</td><td></td><td></td></tr><tr><td>CLM-2003</td><td>PRIYA NAYLOR</td><td>2026-06-05</td><td>640.00</td><td>not_recoverable</td><td>bill_patient</td><td>biller</td><td>0.880</td><td></td><td></td></tr><tr><td>CLM-2004</td><td>DENISE KOWALSKI</td><td>2026-06-17</td><td>990.00</td><td>needs_info</td><td>verify_duplicate</td><td>biller</td><td>0.720</td><td></td><td></td></tr></tbody></table></body></html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+@page { size: Letter; margin: 0.58in; }
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 10.5pt; line-height: 1.42; margin: 0; }
+h1 { font-size: 21pt; margin: 0 0 8px; letter-spacing: -0.02em; }
+h2 { font-size: 13pt; margin: 18px 0 7px; color: #173f5f; }
+p { margin: 0 0 10px; }
+.cover { min-height: 9.3in; display: flex; flex-direction: column; }
+.letter { break-before: page; }
+.brand { border-top: 7px solid #0d9488; padding-top: 16px; margin-bottom: 20px; }
+.eyebrow { color: #0f766e; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: 8.5pt; }
+.cover-table { border: 1px solid #cbd5e1; border-radius: 8px; border-collapse: separate; border-spacing: 0; table-layout: fixed; overflow: hidden; }
+.cover-table td { width: 50%; border: 0; border-bottom: 1px solid #e2e8f0; padding: 10px 14px; vertical-align: top; font-size: 10.5pt; }
+.cover-table td + td { border-left: 1px solid #e2e8f0; }
+.cover-table tr:last-child td { border-bottom: 0; }
+.label { display: block; color: #64748b; font-size: 8pt; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+.value { display: block; font-weight: 700; overflow-wrap: anywhere; }
+.notice { margin-top: 18px; background: #f1f5f9; border-left: 4px solid #0d9488; padding: 11px 13px; }
+.checklist { margin-top: 14px; border: 1px solid #f59e0b; background: #fffbeb; padding: 10px 13px; }
+.footer { margin-top: auto; color: #64748b; font-size: 8.5pt; border-top: 1px solid #cbd5e1; padding-top: 8px; }
+.letterhead { display: flex; justify-content: space-between; gap: 30px; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 20px; }
+.letterhead strong { color: #173f5f; font-size: 14pt; }
+.meta { text-align: right; color: #475569; font-size: 9pt; }
+.subject { background: #f1f5f9; padding: 10px 12px; margin: 14px 0; }
+.signature { margin-top: 25px; }
+.basis { border-left: 3px solid #94a3b8; padding-left: 12px; color: #334155; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; background: #173f5f; color: white; padding: 7px; font-size: 8.5pt; }
+td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-size: 8.5pt; }
+</style><title>CLM-1008 fax packet</title></head>
+<body>
+  <section class="cover">
+    <div class="brand"><div class="eyebrow">Fax cover sheet</div><h1>Records submission / claim reconsideration</h1>
+      <p>Skyline Ambulance Service · NPI 1999999984</p></div>
+    <table class="cover-table"><tbody>
+      <tr><td><span class="label">To</span><span class="value">Granite State Health Plan</span></td>
+          <td><span class="label">Destination fax</span><span class="value">(603) 555-0188</span></td></tr>
+      <tr><td><span class="label">Patient</span><span class="value">OLIVER FINCH</span></td>
+          <td><span class="label">Member ID</span><span class="value">GSH001234508</span></td></tr>
+      <tr><td><span class="label">Claim ID</span><span class="value">CLM-1008</span></td>
+          <td><span class="label">Date of service</span><span class="value">2026-06-24</span></td></tr>
+      <tr><td><span class="label">Provider</span><span class="value">Skyline Ambulance Service</span></td>
+          <td><span class="label">Provider NPI</span><span class="value">1999999984</span></td></tr>
+      <tr><td colspan="2"><span class="label">Request</span><span class="value">Records submission / claim reconsideration</span></td></tr>
+      <tr><td><span class="label">Generated packet pages</span><span class="value">2</span></td>
+          <td><span class="label">Date</span><span class="value">2026-08-01</span></td></tr>
+    </tbody></table>
+    <div class="checklist"><strong>Before sending:</strong> Attach signed Certificate of Medical Necessity before faxing. The generated page count excludes external attachments.</div>
+  </section>
+  <section class="letter">
+    <div class="letterhead"><div><strong>Skyline Ambulance Service</strong><br>4400 Airport Road, Nashua, NH 03063<br>NPI 1999999984</div>
+      <div class="meta">2026-08-01<br>Via fax: (603) 555-0188</div></div>
+    <p>Granite State Health Plan<br>PO Box 91000, Concord, NH 03301</p>
+    <div class="subject"><strong>Re: Records submission / claim reconsideration</strong><br>
+      Patient: OLIVER FINCH · Member ID: GSH001234508<br>
+      Claim: CLM-1008 · DOS: 2026-06-24</div>
+    <p>To the Claims Review Team:</p>
+    <p>Granite State Health Plan denied the referenced service under CO-50. RARC not supplied identifies the missing documentation. Please reconsider the claim upon receipt of the attached signed Certificate of Medical Necessity. This request is limited to service line A0425 (2026-06-24), denied amount $276.00.</p>
+    <h2>Decision basis</h2>
+    <p class="basis">ERA 835 for CLM-1008 (Granite State Health Plan, DOS 2026-06-24) shows the claim paid 1150.00 of 1426.00 with status 1, but service line 2 (A0425, 12 units, billed 276.00) was denied in full for CO-50 (not medically necessary), group code explicitly CO, so the 276.00 is payer liability rather than patient responsibility (patient_responsibility 0.00). No RARCs or payer reason text were supplied and no source discrepancies were listed; the item appears only in the ERA (no clearinghouse record), so there is no duplicate (CARC 18) or prior-auth timeliness question in play. Medical-necessity line denial on mileage is addressed by supplying supporting clinical documentation (PCS/trip record establishing medical necessity for the loaded miles), and the fact sheet flags an external attachment as likely required; packet prepared by the biller for fax, not transmitted by this application. Confidence tempered because no RARC or payer narrative explains the necessity criteria applied.</p>
+    <p>Please send the written determination to the provider address above. For questions, contact the submitting biller.</p>
+    <div class="signature"><p>Sincerely,</p><p><strong>Billing Department</strong><br>Skyline Ambulance Service</p></div>
+  </section>
+</body></html>

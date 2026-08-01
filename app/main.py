@@ -44,11 +44,13 @@ def _decode_upload(data: bytes, name: str) -> str:
 
 @app.get("/api/health")
 def health() -> dict:
+    model_name = os.getenv("LLM_MODEL") or os.getenv("ANTHROPIC_MODEL", "")
+    api_key_configured = bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
     return {
         "status": "ok",
         "llm_provider": "anthropic",
-        "llm_configured": bool(os.getenv("ANTHROPIC_API_KEY", "").strip()),
-        "llm_model": os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5"),
+        "llm_configured": api_key_configured and bool(model_name.strip()),
+        "llm_model": model_name,
         "current_date": date.today().isoformat(),
     }
 
@@ -80,7 +82,9 @@ async def run_agent(
     session: Session = Depends(get_session),
 ) -> dict:
     if not os.getenv("ANTHROPIC_API_KEY", "").strip():
-        raise HTTPException(503, "ANTHROPIC_API_KEY is not configured. Add it to .env and restart the app.")
+        raise HTTPException(503, "The model API key is not configured. Add ANTHROPIC_API_KEY to .env and restart the app.")
+    if not (os.getenv("LLM_MODEL") or os.getenv("ANTHROPIC_MODEL", "")).strip():
+        raise HTTPException(503, "LLM_MODEL is not configured. Add the exact provider model ID to .env and restart the app.")
     run = session.get(RunRecord, request.run_id)
     if not run:
         raise HTTPException(404, "Run not found")

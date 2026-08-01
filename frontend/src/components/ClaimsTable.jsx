@@ -9,16 +9,10 @@ function DecisionDetail({ claim, decision }) {
           <strong>{policy.label || "Human review"}</strong>
           <p>{policy.reason || "No independent policy assessment is available."}</p>
         </div>
-        {policy.expected && (
-          <div className="policy-baseline">
-            <span>Policy baseline</span>
-            <strong>{policy.expected.outcome.replaceAll("_", " ")} · {policy.expected.next_action.replaceAll("_", " ")}</strong>
-          </div>
-        )}
         {policy.evidence?.length > 0 && <small>Evidence: {policy.evidence.join(" • ")}</small>}
       </div>
       <div>
-        <h4>{policy.status === "guardrail_corrected" ? "Guardrail explanation" : "Claude rationale"}</h4>
+        <h4>{policy.status === "guardrail_corrected" ? "Guardrail review" : "Model rationale"}</h4>
         <p>{decision.rationale || "Decision pending"}</p>
       </div>
       <div className="detail-grid">
@@ -56,9 +50,9 @@ export default function ClaimsTable({ claims }) {
       </div>
       <div className="decision-guide">
         <strong>How to judge a decision</strong>
-        <span><b>Rule confirmed</b> means Claude matches the supplied billing rules.</span>
+        <span><b>Model decision</b> means the model answered and safety checks passed.</span>
         <span><b>Human review</b> means the files do not contain enough information for a safe automatic answer.</span>
-        <span><b>Claude corrected</b> means a deterministic guardrail replaced an unsafe recommendation.</span>
+        <span><b>Model revised</b> means the first answer broke a guardrail and the model corrected it on retry.</span>
       </div>
       <div className="claim-list">
         {claims.map((claim) => {

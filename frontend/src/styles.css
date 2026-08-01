@@ -80,9 +80,10 @@ main { max-width: 1184px; margin: 0 auto; padding: 28px 28px 70px; }
 .claim-identity, .claim-amount, .next-action { display: grid; gap: 3px; }
 .claim-identity span, .claim-amount span, .next-action span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
 .policy-badge { justify-self: start; margin-top: 3px; border-radius: 999px; padding: 4px 7px; font-size: 9px; font-style: normal; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
-.policy-badge.rule_confirmed { background: #dcfce7; color: #166534; }
+.policy-badge.model_decision { background: #dcfce7; color: #166534; }
 .policy-badge.human_review { background: #fef3c7; color: #92400e; }
 .policy-badge.guardrail_corrected { background: #dbeafe; color: #1e40af; }
+.policy-badge.model_failed { background: #fee2e2; color: #991b1b; }
 .outcome { justify-self: start; border-radius: 999px; padding: 6px 9px; font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: .04em; background: #e2e8f0; }
 .outcome.recoverable { background: #dcfce7; color: #166534; }
 .outcome.not_recoverable { background: #e2e8f0; color: #475569; }
@@ -92,9 +93,10 @@ main { max-width: 1184px; margin: 0 auto; padding: 28px 28px 70px; }
 .claim-row[open] .chevron { transform: rotate(180deg); }
 .decision-detail { background: #f1f6f6; border-radius: 13px; padding: 20px; margin: 0 0 16px; }
 .policy-callout { display: grid; grid-template-columns: 1fr auto; gap: 8px 18px; margin-bottom: 18px; padding: 14px; border: 1px solid; border-radius: 10px; }
-.policy-callout.rule_confirmed { background: #f0fdf4; border-color: #bbf7d0; }
+.policy-callout.model_decision { background: #f0fdf4; border-color: #bbf7d0; }
 .policy-callout.human_review { background: #fffbeb; border-color: #fde68a; }
 .policy-callout.guardrail_corrected { background: #eff6ff; border-color: #bfdbfe; }
+.policy-callout.model_failed { background: #fef2f2; border-color: #fecaca; }
 .policy-callout p { margin-top: 4px; }
 .policy-callout small { grid-column: 1 / -1; color: #526872; }
 .policy-baseline { display: grid; gap: 3px; align-content: start; min-width: 190px; }

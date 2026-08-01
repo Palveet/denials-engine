@@ -32,10 +32,9 @@ RARC_DESCRIPTIONS = {
 ACTIONABLE_CARCS = {"1", "16", "18", "50", "197"}
 FAX_ACTIONS = {"submit_appeal", "submit_records", "request_retro_auth"}
 RECOVERY_ACTIONS = FAX_ACTIONS | {"resubmit_corrected_claim"}
-PROMPT_VERSION = "2026-07-28.2"
+PROMPT_VERSION = "2026-08-01.1"
 
 
 def iso_today() -> date:
     """Separate clock access so tests can pass a stable as-of date."""
     return date.today()
-

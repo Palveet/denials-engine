@@ -58,6 +58,7 @@ class ServiceLineData(BaseModel):
     paid_amount: Decimal
     units: Decimal | None = None
     service_date: date | None = None
+    rarcs: list[str] = Field(default_factory=list)
     adjustments: list[AdjustmentData] = Field(default_factory=list)
 
 

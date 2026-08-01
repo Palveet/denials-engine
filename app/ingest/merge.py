@@ -28,7 +28,7 @@ def _promote_era_adjustments(claim: ClaimData) -> list[DenialData]:
                 DenialData(
                     group_code=adjustment.group_code,
                     carc=adjustment.carc,
-                    rarcs=list(adjustment.rarcs),
+                    rarcs=list(dict.fromkeys([*adjustment.rarcs, *line.rarcs])),
                     denied_amount=adjustment.amount,
                     source=Source.ERA_835.value,
                     service_line_sequence=line.sequence,

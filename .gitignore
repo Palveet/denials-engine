@@ -11,5 +11,4 @@ app/static/
 denials.db
 denials.db-*
 uploads/
-artifacts/runs/
 tmp/
