@@ -55,13 +55,14 @@ One complete run against the provided files is committed under `artifacts/runs/`
 
 ## QA performed
 
-32 deterministic tests, no live provider calls:
+35 deterministic tests, no live provider calls:
 
 - Exact claim, line, RARC, BPR, CSV-format, merge, discrepancy, promotion, and guardrail assertions
 - Dynamic payer-name, positional member-ID, line-level LQ, alternate-terminator, multiple-transaction, and BPR-reconciliation assertions
 - Ingest negative paths: a non-835 upload, a truncated CLP segment, a missing CSV column, and an unparseable amount that must name the offending row
 - Letter-content assertions covering the bug described under "Actors and fax semantics": no CMN demand on a CO-50, no remark sentence when the payer sent no RARC, remark codes expanded when they exist, and a readable letter when the CARC itself is missing
-- Handoff assertion that validator flags and source discrepancies stay in separate columns
+- Fact-sheet assertions that a known HCPCS carries its supplied description and an unknown one is labelled unknown, so the model is never left to supply a procedure description from memory
+- Handoff assertion that validator flags and source discrepancies stay in separate columns, and a packet assertion that the model rationale never reaches the payer
 - Malformed model output correction/failure tests
 - Provider HTTP failures surface the provider's own message (billing, rate limit, model access) rather than a bare status code
 - Provider-failure persistence test proving the run fails and produces no artifacts
