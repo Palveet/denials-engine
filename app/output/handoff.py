@@ -16,7 +16,8 @@ HEADERS = [
     "next_step",
     "actor",
     "confidence",
-    "flags",
+    "validator_flags",
+    "source_discrepancies",
     "artifacts",
 ]
 

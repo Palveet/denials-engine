@@ -66,7 +66,7 @@ class AnthropicClient:
     def __init__(self) -> None:
         self.api_key = os.getenv("ANTHROPIC_API_KEY", "")
         self.base_url = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").rstrip("/")
-        self.model_name = os.getenv("LLM_MODEL") or os.getenv("ANTHROPIC_MODEL", "")
+        self.model_name = os.getenv("LLM_MODEL", "")
 
     async def complete(self, fact_sheet: dict, validation_error: str | None = None) -> tuple[str, dict]:
         if not self.api_key:
@@ -107,6 +107,19 @@ def get_client() -> DecisionClient:
     return AnthropicClient()
 
 
+def _provider_error_message(response: httpx.Response) -> str:
+    """Surface the provider's own explanation; a bare status code is not actionable."""
+    try:
+        body = response.json()
+    except ValueError:
+        return response.text[:400].strip() or "no response body"
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict) and error.get("message"):
+            return str(error["message"])
+    return json.dumps(body)[:400]
+
+
 async def decide_fact_sheet(client: DecisionClient, fact_sheet: dict) -> ValidatedDecision:
     last_raw: dict = {}
     error_text: str | None = None
@@ -118,6 +131,7 @@ async def decide_fact_sheet(client: DecisionClient, fact_sheet: dict) -> Validat
             error_text = str(exc)
         except Exception as exc:
             raw = {"error": str(exc)}
+            detail = str(exc)
             if isinstance(exc, httpx.HTTPStatusError):
                 raw.update(
                     {
@@ -126,8 +140,12 @@ async def decide_fact_sheet(client: DecisionClient, fact_sheet: dict) -> Validat
                         "response": exc.response.text[:2000],
                     }
                 )
+                detail = (
+                    f"HTTP {exc.response.status_code} from the model provider: "
+                    f"{_provider_error_message(exc.response)}"
+                )
             raise ModelDecisionError(
-                f"Model request failed: {exc}",
+                f"Model request failed ({client.model_name}). {detail}",
                 flag="model_request_failure",
                 raw=raw,
                 model_name=client.model_name,

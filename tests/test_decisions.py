@@ -2,6 +2,7 @@ import json
 from datetime import date
 from decimal import Decimal
 
+import httpx
 import pytest
 
 from app.decide.facts import build_fact_sheet
@@ -303,3 +304,37 @@ async def test_request_failure_is_not_converted_into_a_fake_decision():
     with pytest.raises(ModelDecisionError) as exc_info:
         await decide_fact_sheet(RequestFailure(), facts)
     assert exc_info.value.flag == "model_request_failure"
+
+
+class BillingFailure:
+    """Reproduces a provider 400 whose only useful content is the JSON error message."""
+
+    model_name = "billing-test"
+
+    async def complete(self, fact_sheet, validation_error=None):
+        request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+        response = httpx.Response(
+            400,
+            request=request,
+            json={
+                "type": "error",
+                "error": {
+                    "type": "invalid_request_error",
+                    "message": "Your credit balance is too low to access the Anthropic API.",
+                },
+            },
+        )
+        raise httpx.HTTPStatusError("400 Bad Request", request=request, response=response)
+
+
+@pytest.mark.asyncio
+async def test_http_failure_surfaces_the_provider_message_and_model():
+    claim, denial = claim_with(None)
+    facts = build_fact_sheet(claim, denial, as_of_date=date(2026, 7, 28))
+    with pytest.raises(ModelDecisionError) as exc_info:
+        await decide_fact_sheet(BillingFailure(), facts)
+    message = str(exc_info.value)
+    assert "credit balance is too low" in message
+    assert "billing-test" in message
+    assert "HTTP 400" in message
+    assert exc_info.value.raw["status_code"] == 400

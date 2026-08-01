@@ -33,25 +33,36 @@ These are safety constraints, not an answer key: a safe model recommendation is 
 
 ## Actors and fax semantics
 
-The plan's oracle used `system->payer`, but the allowed actor is a single enum and this application does not own a fax transport. Fax actions therefore use actor `biller`. The system prepares one combined PDF (cover sheet followed by letter), and the biller verifies attachments and sends it. CO-16/M60 and CO-50 packets explicitly call out the required CMN or clinical records; the generated packet does not falsely claim those external files are present.
+The plan's oracle used `system->payer`, but the allowed actor is a single enum and this application does not own a fax transport. Fax actions therefore use actor `biller`. The system prepares one combined PDF (cover sheet followed by letter), and the biller verifies attachments and sends it. The packet does not falsely claim external files are present; it names what still has to be attached.
+
+Letter content is driven by the denial, not by the chosen action. An earlier version keyed the body off `next_action` alone, which produced a Certificate of Medical Necessity request on a CO-50 medical-necessity denial that had never cited a missing CMN, and a "RARC not supplied identifies the missing documentation" sentence when the payer sent no remark code at all. Now the requested enclosure comes from the CARC and RARCs (M60 asks for the CMN, CO-50 asks for clinical records supporting necessity, CO-197 asks for the authorization request), and the remark-code sentence is omitted entirely when the payer sent no remark. A letter that misstates the payer's own reason for denying is worse than no letter.
 
 ## Timeliness
 
-Each upload is stamped with the server's current date, shown read-only in the UI, and code computes `days_since_dos` from that date. No 90-day retro-authorization rule is enforced because the primer says only that the window is limited and payer-specific. For CLM-1006, the guardrail blocks a retro-authorization request unless the required payer-specific timeliness fact exists. This avoids turning an undocumented assumption into policy while leaving the safe decision to the model.
+Each upload is stamped with the server's current date, shown read-only in the UI, and code computes `days_since_dos` from that date. No 90-day retro-authorization rule is enforced because the primer says only that the window is limited and payer-specific.
+
+The consequence is deliberate and worth stating plainly: because nothing in the supplied files carries a payer-specific retro-authorization deadline, the CO-197 guardrail currently blocks `request_retro_auth` on every CO-197 denial, so CLM-1006 always routes to a payer call. The retro-authorization letter template exists and is tested, but no claim in this dataset can reach it. The alternative was inventing a deadline, which would turn an undocumented assumption into policy. The real fix is a payer-contract table supplying the window, which is listed under what I would build next.
 
 ## Runtime model policy
 
-Runtime decisions use Anthropic's native Messages API, configured by `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, and the model-agnostic `LLM_MODEL` setting. Any model ID supported by that endpoint can be selected without changing application code. The model is forced to call one strict `record_denial_decision` tool whose schema matches the application contract; Pydantic and deterministic safety constraints still validate the result afterward. There is no fixture or dummy-decision mode, and no generated result set is committed. Missing configuration blocks the decision run with an explicit error. Unit tests use isolated test doubles that cannot be selected by the running application.
+Runtime decisions use Anthropic's native Messages API, configured by `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`, and the model-agnostic `LLM_MODEL` setting. Any model ID supported by that endpoint can be selected without changing application code. The model is forced to call one strict `record_denial_decision` tool whose schema matches the application contract; Pydantic and deterministic safety constraints still validate the result afterward. There is no fixture or dummy-decision mode, and the application never invents a decision. Missing configuration blocks the decision run with an explicit error. Unit tests use isolated test doubles that cannot be selected by the running application.
+
+One complete run against the provided files is committed under `artifacts/runs/7252eced-6881-410c-b355-7882b3302a3c/` so the reviewer does not have to regenerate anything. Those decisions came from a live model call, not from a fixture. Only that one run is committed: the decide stage is genuinely non-deterministic on the ambiguous claims, and shipping several runs would leave the reviewer guessing which set is authoritative. CLM-1005 and CLM-1008 are where repeated runs disagree most, both CO-50 medical-necessity denials that a model can legitimately route to either `submit_appeal` or `submit_records`. The guardrails accept both because both are safe; only the framing of the outgoing letter differs.
 
 ## QA performed
 
+32 deterministic tests, no live provider calls:
+
 - Exact claim, line, RARC, BPR, CSV-format, merge, discrepancy, promotion, and guardrail assertions
 - Dynamic payer-name, positional member-ID, line-level LQ, alternate-terminator, multiple-transaction, and BPR-reconciliation assertions
-- Malformed model output correction/failure tests without a live key
+- Ingest negative paths: a non-835 upload, a truncated CLP segment, a missing CSV column, and an unparseable amount that must name the offending row
+- Letter-content assertions covering the bug described under "Actors and fax semantics": no CMN demand on a CO-50, no remark sentence when the payer sent no RARC, remark codes expanded when they exist, and a readable letter when the CARC itself is missing
+- Handoff assertion that validator flags and source discrepancies stay in separate columns
+- Malformed model output correction/failure tests
+- Provider HTTP failures surface the provider's own message (billing, rate limit, model access) rather than a bare status code
 - Provider-failure persistence test proving the run fails and produces no artifacts
 - PDF required-field, non-empty, and page-count checks
-- Deterministic ingestion, validation, persistence, document, and page-count tests
-- Visual inspection of generated fax-packet and handoff pages
+- Visual inspection of every committed fax packet and the handoff pages
 - Frontend production build and npm audit
 - Fresh Docker build/run, browser upload/run/results/download flow
 

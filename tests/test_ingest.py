@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from app.ingest.clearinghouse import normalize_carc, parse_clearinghouse_csv
+from app.ingest.clearinghouse import (
+    ClearinghouseCSVError,
+    normalize_carc,
+    parse_clearinghouse_csv,
+)
 from app.ingest.merge import merge_claims
 from app.ingest.x12_835 import X12835Error, parse_835
 
@@ -87,10 +91,38 @@ def test_835_parser_accumulates_multiple_transaction_sets():
     }
 
 
+def test_835_parser_rejects_a_file_that_is_not_an_835():
+    with pytest.raises(X12835Error, match="ISA segment"):
+        parse_835("CH Ref #,Claim ID\nCH-1,CLM-1\n")
+
+
+def test_835_parser_rejects_a_truncated_claim_segment():
+    text = (DATA / "sample.835").read_text().replace(
+        "CLP*CLM-1001*1*1180.00*1180.00*0.00*CI*2026175000101*41",
+        "CLP*CLM-1001*1*1180.00",
+        1,
+    )
+    with pytest.raises(X12835Error, match="CLP segment is incomplete"):
+        parse_835(text)
+
+
 def test_csv_carc_normalization_preserves_unknown_group():
     assert normalize_carc("16") == ("UNKNOWN", "16")
     assert normalize_carc("PR-1") == ("PR", "1")
     assert normalize_carc("") == ("UNKNOWN", None)
+
+
+def test_csv_rejects_a_missing_required_column():
+    text = (DATA / "denials_export.csv").read_text().replace("Payer Reason Text,", "", 1)
+    with pytest.raises(ClearinghouseCSVError, match="Payer Reason Text"):
+        parse_clearinghouse_csv(text)
+
+
+def test_csv_rejects_an_unparseable_amount_and_names_the_row():
+    lines = (DATA / "denials_export.csv").read_text().splitlines()
+    lines[1] = lines[1].replace(",1275.00,", ",not-a-number,")
+    with pytest.raises(ClearinghouseCSVError, match="row 2"):
+        parse_clearinghouse_csv("\n".join(lines))
 
 
 def test_merge_dedupes_promotes_and_records_discrepancies(merged_claims):

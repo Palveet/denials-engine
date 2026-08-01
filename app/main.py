@@ -44,7 +44,7 @@ def _decode_upload(data: bytes, name: str) -> str:
 
 @app.get("/api/health")
 def health() -> dict:
-    model_name = os.getenv("LLM_MODEL") or os.getenv("ANTHROPIC_MODEL", "")
+    model_name = os.getenv("LLM_MODEL", "")
     api_key_configured = bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
     return {
         "status": "ok",
@@ -83,7 +83,7 @@ async def run_agent(
 ) -> dict:
     if not os.getenv("ANTHROPIC_API_KEY", "").strip():
         raise HTTPException(503, "The model API key is not configured. Add ANTHROPIC_API_KEY to .env and restart the app.")
-    if not (os.getenv("LLM_MODEL") or os.getenv("ANTHROPIC_MODEL", "")).strip():
+    if not os.getenv("LLM_MODEL", "").strip():
         raise HTTPException(503, "LLM_MODEL is not configured. Add the exact provider model ID to .env and restart the app.")
     run = session.get(RunRecord, request.run_id)
     if not run:

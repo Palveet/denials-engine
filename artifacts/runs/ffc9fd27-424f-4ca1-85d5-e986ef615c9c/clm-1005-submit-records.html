@@ -46,7 +46,9 @@ td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-s
       <tr><td><span class="label">Generated packet pages</span><span class="value">2</span></td>
           <td><span class="label">Date</span><span class="value">2026-08-01</span></td></tr>
     </tbody></table>
-    <div class="checklist"><strong>Before sending:</strong> Attach signed Certificate of Medical Necessity before faxing. The generated page count excludes external attachments.</div>
+    <div class="checklist"><strong>Before sending:</strong> Attach the clinical records supporting the medical necessity of this transport before faxing. The generated page count excludes external attachments.</div>
+    <div class="notice"><strong>Synthetic exercise data.</strong> This packet contains no real PHI. Verify the destination and every attachment before any real-world use.</div>
+    <div class="footer">Prepared by the Mini Denials Engine for biller review. The application does not transmit faxes.</div>
   </section>
   <section class="letter">
     <div class="letterhead"><div><strong>Skyline Ambulance Service</strong><br>4400 Airport Road, Nashua, NH 03063<br>NPI 1999999984</div>
@@ -56,9 +58,9 @@ td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-s
       Patient: ELEANOR BRAND · Member ID: GSH001234505<br>
       Claim: CLM-1005 · DOS: 2026-06-20</div>
     <p>To the Claims Review Team:</p>
-    <p>Granite State Health Plan denied the referenced service under CO-50. RARC N115 identifies the missing documentation. Please reconsider the claim upon receipt of the attached signed Certificate of Medical Necessity. This request is limited to service line A0433 (2026-06-20), denied amount $1620.00.</p>
+    <p>Granite State Health Plan denied the referenced service under CO-50. The payer cited remark code N115 (The decision followed a Local Coverage Determination). We are submitting the clinical records supporting the medical necessity of this transport and ask that the claim be reconsidered on that record. This request is limited to service line A0433 (2026-06-20), denied amount $1620.00.</p>
     <h2>Decision basis</h2>
-    <p class="basis">CO-50 (medical necessity denial) with RARC N115 indicating the denial followed a Local Coverage Determination, for HCPCS A0433 (ambulance ALS emergency transport) billed at $1,620.00 with $0.00 paid. Group code CO is explicit, so this is a payer-side denial, not patient responsibility. No duplicate (CARC 18) flag is present, and no discrepancies were listed in the computed data, so this can proceed. Since the denial rests on medical necessity/LCD criteria, supporting clinical documentation (e.g., run/trip report, patient condition, physician certification) should be submitted to demonstrate necessity per the LCD referenced. This is distinct from a missing Certificate of Medical Necessity (M60) scenario, but the same remediation path (submit_records) applies to contest a medical-necessity determination with clinical evidence.</p>
+    <p class="basis">ERA 835 shows an explicit CO-group CARC 50 (not medically necessary) denying the full 1620.00 billed for HCPCS A0433 (ALS1 emergency) on DOS 2026-06-20, with RARC N115 indicating the decision followed a Local Coverage Determination. CO group means provider liability, not patient responsibility (patient_responsibility 0.00), so this is a payer denial that can be challenged with clinical documentation demonstrating medical necessity under the cited LCD; computed flags indicate external attachments are likely required and there is no duplicate (no CARC 18) and no listed source discrepancies. The claim appears only in the ERA 835 source (appears_in_both_sources false, no clearinghouse ref/status), so the record set is single-sourced. Records packet to be prepared by the biller; no appeal-timeliness or prior-auth window is asserted since none is supplied.</p>
     <p>Please send the written determination to the provider address above. For questions, contact the submitting biller.</p>
     <div class="signature"><p>Sincerely,</p><p><strong>Billing Department</strong><br>Skyline Ambulance Service</p></div>
   </section>

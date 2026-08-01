@@ -1,0 +1,13 @@
+claim_id,patient,date_of_service,denied_amount,outcome,next_step,actor,confidence,validator_flags,source_discrepancies,artifacts
+CLM-1001,JANE DOE,2026-06-08,0.00,not_recoverable,none,system,0.900,,,
+CLM-1002,RICHARD ROE,2026-06-11,0.00,not_recoverable,none,system,0.860,,,
+CLM-1003,MARGARET STONE,2026-06-15,700.00,not_recoverable,bill_patient,biller,0.930,,,
+CLM-1004,HECTOR VALE,2026-06-18,1275.00,recoverable,submit_records,biller,0.820,,,clm-1004-submit-records.pdf
+CLM-1005,ELEANOR BRAND,2026-06-20,1620.00,recoverable,submit_records,biller,0.720,,,clm-1005-submit-records.pdf
+CLM-1006,LIN CHEN,2026-01-12,1450.00,unsure,call_payer,biller,0.550,low_confidence,billed_amount; patient_name,
+CLM-1007,GORDON WHITFIELD,2026-06-22,980.00,needs_info,verify_duplicate,biller,0.820,,,
+CLM-1008,OLIVER FINCH,2026-06-24,276.00,recoverable,submit_records,biller,0.680,,,clm-1008-submit-records.pdf
+CLM-2001,SAMUEL ORTIZ,2026-06-09,1580.00,unsure,call_payer,biller,0.620,,,
+CLM-2002,AMARA OKAFOR,2026-06-14,1120.00,needs_info,call_payer,biller,0.720,,,
+CLM-2003,PRIYA NAYLOR,2026-06-05,640.00,not_recoverable,bill_patient,biller,0.850,,,
+CLM-2004,DENISE KOWALSKI,2026-06-17,990.00,needs_info,verify_duplicate,biller,0.720,,,

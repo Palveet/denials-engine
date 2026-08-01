@@ -28,37 +28,39 @@ p { margin: 0 0 10px; }
 table { border-collapse: collapse; width: 100%; }
 th { text-align: left; background: #173f5f; color: white; padding: 7px; font-size: 8.5pt; }
 td { border-bottom: 1px solid #d8e0e8; padding: 7px; vertical-align: top; font-size: 8.5pt; }
-</style><title>CLM-1008 fax packet</title></head>
+</style><title>CLM-1004 fax packet</title></head>
 <body>
   <section class="cover">
-    <div class="brand"><div class="eyebrow">Fax cover sheet</div><h1>Medical necessity appeal</h1>
+    <div class="brand"><div class="eyebrow">Fax cover sheet</div><h1>Records submission / claim reconsideration</h1>
       <p>Skyline Ambulance Service · NPI 1999999984</p></div>
     <table class="cover-table"><tbody>
       <tr><td><span class="label">To</span><span class="value">Granite State Health Plan</span></td>
           <td><span class="label">Destination fax</span><span class="value">(603) 555-0188</span></td></tr>
-      <tr><td><span class="label">Patient</span><span class="value">OLIVER FINCH</span></td>
-          <td><span class="label">Member ID</span><span class="value">GSH001234508</span></td></tr>
-      <tr><td><span class="label">Claim ID</span><span class="value">CLM-1008</span></td>
-          <td><span class="label">Date of service</span><span class="value">2026-06-24</span></td></tr>
+      <tr><td><span class="label">Patient</span><span class="value">HECTOR VALE</span></td>
+          <td><span class="label">Member ID</span><span class="value">GSH001234504</span></td></tr>
+      <tr><td><span class="label">Claim ID</span><span class="value">CLM-1004</span></td>
+          <td><span class="label">Date of service</span><span class="value">2026-06-18</span></td></tr>
       <tr><td><span class="label">Provider</span><span class="value">Skyline Ambulance Service</span></td>
           <td><span class="label">Provider NPI</span><span class="value">1999999984</span></td></tr>
-      <tr><td colspan="2"><span class="label">Request</span><span class="value">Medical necessity appeal</span></td></tr>
+      <tr><td colspan="2"><span class="label">Request</span><span class="value">Records submission / claim reconsideration</span></td></tr>
       <tr><td><span class="label">Generated packet pages</span><span class="value">2</span></td>
           <td><span class="label">Date</span><span class="value">2026-08-01</span></td></tr>
     </tbody></table>
-    <div class="checklist"><strong>Before sending:</strong> Attach supporting clinical records before faxing. The generated page count excludes external attachments.</div>
+    <div class="checklist"><strong>Before sending:</strong> Attach the signed Certificate of Medical Necessity before faxing. The generated page count excludes external attachments.</div>
+    <div class="notice"><strong>Synthetic exercise data.</strong> This packet contains no real PHI. Verify the destination and every attachment before any real-world use.</div>
+    <div class="footer">Prepared by the Mini Denials Engine for biller review. The application does not transmit faxes.</div>
   </section>
   <section class="letter">
     <div class="letterhead"><div><strong>Skyline Ambulance Service</strong><br>4400 Airport Road, Nashua, NH 03063<br>NPI 1999999984</div>
       <div class="meta">2026-08-01<br>Via fax: (603) 555-0188</div></div>
     <p>Granite State Health Plan<br>PO Box 91000, Concord, NH 03301</p>
-    <div class="subject"><strong>Re: Medical necessity appeal</strong><br>
-      Patient: OLIVER FINCH · Member ID: GSH001234508<br>
-      Claim: CLM-1008 · DOS: 2026-06-24</div>
+    <div class="subject"><strong>Re: Records submission / claim reconsideration</strong><br>
+      Patient: HECTOR VALE · Member ID: GSH001234504<br>
+      Claim: CLM-1004 · DOS: 2026-06-18</div>
     <p>To the Claims Review Team:</p>
-    <p>We request reconsideration of the referenced service denied under CO-50. The enclosed clinical material supports the medical necessity of the ambulance service. Please reverse the denial or provide the specific coverage criteria that remain unmet. This request is limited to service line A0425 (2026-06-24), denied amount $276.00.</p>
+    <p>Granite State Health Plan denied the referenced service under CO-16. The payer cited remark code M60 (Missing Certificate of Medical Necessity). We are submitting the signed Certificate of Medical Necessity and ask that the claim be reconsidered on that record. This request is limited to service line A0427 (2026-06-18), denied amount $1275.00.</p>
     <h2>Decision basis</h2>
-    <p class="basis">Line 2 (HCPCS A0425, 12 units, $276.00) was denied with explicit group CO and CARC 50 (not medically necessary), no RARCs provided and no discrepancies flagged. Group CO indicates a payer contractual denial rather than patient responsibility, so this amount is payer-recoverable via appeal, not billable to the patient. Since the payer&#x27;s medical necessity determination lacks supporting documentation on file (no RARC like M60 citing missing CMN, and no external attachment noted beyond the flag that one is likely required), the appropriate action is to submit an appeal with supporting medical necessity documentation/records for the mileage/base charge line to contest CARC 50. This is not a duplicate (no CARC 18) and not a prior-auth issue (no CARC 197), so appeal is appropriate rather than retro-auth or duplicate verification. Confidence is moderate-high given explicit group/code but tempered by the likely need for additional records to support the appeal.</p>
+    <p class="basis">CO-16 (explicit CO group, group_is_explicit=true) with RARC M60 (Missing Certificate of Medical Necessity) on service line 1, HCPCS A0427, DOS 2026-06-18, denied amount 1275.00 with 0.00 paid and 0.00 patient responsibility. This is a payer-side informational denial, not PR, and not a duplicate (CARC 18 absent). The missing item is specifically identified as the CMN, so the corrective path is a records submission packet rather than an appeal or retro-auth. Computed flags show the claim appears in both era_835 and clearinghouse_csv with no listed discrepancies, and external_attachment_likely_required=true, consistent with the M60 documentation gap. 44 days since DOS; no payer timeliness window is asserted here. No patient, member, payer, or attachment details beyond the supplied facts are assumed; this app prepares the packet only and does not transmit the fax.</p>
     <p>Please send the written determination to the provider address above. For questions, contact the submitting biller.</p>
     <div class="signature"><p>Sincerely,</p><p><strong>Billing Department</strong><br>Skyline Ambulance Service</p></div>
   </section>

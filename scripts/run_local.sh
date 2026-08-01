@@ -15,7 +15,7 @@ if ! grep -Eq '^ANTHROPIC_API_KEY=[^[:space:]].*$' .env; then
   exit 1
 fi
 
-if ! grep -Eq '^(LLM_MODEL|ANTHROPIC_MODEL)=[^[:space:]].*$' .env; then
+if ! grep -Eq '^LLM_MODEL=[^[:space:]].*$' .env; then
   echo "LLM_MODEL is empty in .env. Add the exact model ID supported by your provider."
   exit 1
 fi

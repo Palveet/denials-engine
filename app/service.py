@@ -285,8 +285,11 @@ def generate_run_artifacts(run_id: str, *, output_dir: Path | None = None) -> No
                     "next_step": "; ".join(item.next_action or "pending" for item in decisions),
                     "actor": "; ".join(item.actor or "pending" for item in decisions),
                     "confidence": "; ".join(str(item.confidence or "") for item in decisions),
-                    "flags": "; ".join(
-                        flag for item in decisions for flag in ((item.validator_flags or []) + [d["field"] for d in (claim.discrepancies or [])])
+                    "validator_flags": "; ".join(
+                        dict.fromkeys(flag for item in decisions for flag in (item.validator_flags or []))
+                    ),
+                    "source_discrepancies": "; ".join(
+                        dict.fromkeys(item["field"] for item in (claim.discrepancies or []))
                     ),
                     "artifacts": "; ".join(artifact_names),
                 }

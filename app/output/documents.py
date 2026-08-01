@@ -18,7 +18,7 @@ if sys.platform == "darwin" and Path("/opt/homebrew/lib").exists():
 from pypdf import PdfReader
 from weasyprint import HTML
 
-from app.constants import PAYER, PROVIDER
+from app.constants import PAYER, PROVIDER, RARC_DESCRIPTIONS
 from app.output.templates import BASE_CSS
 from app.schemas import ClaimData, DenialData, ValidatedDecision
 
@@ -35,8 +35,41 @@ def _request_label(action: str) -> str:
     }.get(action, action.replace("_", " ").title())
 
 
+def _denial_code(denial: DenialData) -> str:
+    if not denial.carc:
+        return "a reason code the payer did not supply"
+    return f"{denial.group_code}-{denial.carc}"
+
+
+def _remark_sentence(denial: DenialData) -> str:
+    """Cite remark codes only when the payer actually sent them."""
+    if not denial.rarcs:
+        return ""
+    described = ", ".join(
+        f"{code} ({RARC_DESCRIPTIONS[code].rstrip('.')})" if code in RARC_DESCRIPTIONS else code
+        for code in denial.rarcs
+    )
+    return f" The payer cited remark code {_e(described)}."
+
+
+def _requested_material(denial: DenialData) -> str:
+    """Name the enclosure the denial itself asks for, not the one the action implies."""
+    rarcs = set(denial.rarcs)
+    if "M60" in rarcs:
+        return "the signed Certificate of Medical Necessity"
+    if denial.carc == "16":
+        return "the documentation identified by the payer's remark codes"
+    if denial.carc == "50":
+        return "the clinical records supporting the medical necessity of this transport"
+    if denial.carc == "197":
+        return "the authorization request and supporting records"
+    return "the supporting documentation for this claim"
+
+
 def _letter_body(claim: ClaimData, denial: DenialData, decision: ValidatedDecision) -> str:
-    code = f"{denial.group_code}-{denial.carc}" if denial.carc else "no CARC supplied"
+    code = _denial_code(denial)
+    material = _requested_material(denial)
+    remark = _remark_sentence(denial)
     line_text = ""
     if denial.service_line_sequence:
         line = next(
@@ -50,20 +83,20 @@ def _letter_body(claim: ClaimData, denial: DenialData, decision: ValidatedDecisi
             )
     if decision.next_action.value == "submit_records":
         return (
-            f"Granite State Health Plan denied the referenced service under {_e(code)}. "
-            f"RARC {_e(', '.join(denial.rarcs) or 'not supplied')} identifies the missing documentation. "
-            "Please reconsider the claim upon receipt of the attached signed Certificate of Medical Necessity."
+            f"{_e(PAYER['name'])} denied the referenced service under {_e(code)}.{remark} "
+            f"We are submitting {_e(material)} and ask that the claim be reconsidered on that record."
             + line_text
         )
     if decision.next_action.value == "request_retro_auth":
         return (
-            f"The referenced service was denied under {_e(code)} for absent authorization. "
-            "Please advise whether retro-authorization is available under the member's plan and review the enclosed request."
+            f"The referenced service was denied under {_e(code)} for absent authorization.{remark} "
+            "Please advise whether retro-authorization is available under the member's plan and review "
+            f"the enclosed request together with {_e(material)}."
             + line_text
         )
     return (
-        f"We request reconsideration of the referenced service denied under {_e(code)}. "
-        "The enclosed clinical material supports the medical necessity of the ambulance service. "
+        f"We request reconsideration of the referenced service denied under {_e(code)}.{remark} "
+        f"The enclosed material includes {_e(material)}. "
         "Please reverse the denial or provide the specific coverage criteria that remain unmet."
         + line_text
     )
@@ -79,11 +112,7 @@ def packet_html(
 ) -> str:
     member = claim.member_id or f"Not on file - clearinghouse ref {claim.clearinghouse_ref or 'not supplied'}"
     request_label = _request_label(decision.next_action.value)
-    attachments = {
-        "submit_records": "Attach signed Certificate of Medical Necessity before faxing.",
-        "submit_appeal": "Attach supporting clinical records before faxing.",
-        "request_retro_auth": "Attach authorization request and supporting records before faxing.",
-    }.get(decision.next_action.value, "Confirm all supporting material is attached before faxing.")
+    attachments = f"Attach {_requested_material(denial)} before faxing."
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>{BASE_CSS}</style><title>{_e(claim.claim_id)} fax packet</title></head>
 <body>
@@ -104,6 +133,8 @@ def packet_html(
           <td><span class="label">Date</span><span class="value">{_e(packet_date)}</span></td></tr>
     </tbody></table>
     <div class="checklist"><strong>Before sending:</strong> {_e(attachments)} The generated page count excludes external attachments.</div>
+    <div class="notice"><strong>Synthetic exercise data.</strong> This packet contains no real PHI. Verify the destination and every attachment before any real-world use.</div>
+    <div class="footer">Prepared by the Mini Denials Engine for biller review. The application does not transmit faxes.</div>
   </section>
   <section class="letter">
     <div class="letterhead"><div><strong>{_e(PROVIDER['name'])}</strong><br>{_e(PROVIDER['address'])}<br>NPI {_e(PROVIDER['npi'])}</div>
